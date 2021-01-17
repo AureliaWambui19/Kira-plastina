@@ -1,0 +1,582 @@
+---
+title: "week 13"
+author: "Aurelia"
+date: "16/01/2021"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+
+
+#1.Problem definition
+
+Kira Plastinina is a Russian brand that is sold through a defunct chain of retail stores in Russia, Ukraine, Kazakhstan, Belarus, China, Philippines, and Armenia.
+The brand’s Sales and Marketing team would like to understand their customer’s behavior from data that they have collected over the past year.
+More specifically, they would like to learn the characteristics of customer groups
+
+#2.Data sourcing
+
+The dataset for this project can be found here
+
+http://bit.ly/EcommerceCustomersDataset
+
+1. The dataset consists of 10 numerical and 8 categorical attributes. The 'Revenue' attribute can be used as the class label.
+2. "Administrative", "Administrative Duration", "Informational", "Informational Duration", "Product Related" and "Product Related Duration" represents the number of different types of pages visited by the visitor in that session and total time spent in each of these page categories. The values of these features are derived from the URL information of the pages visited by the user and updated in real-time when a user takes an action, e.g. moving from one page to another. 
+3. "Administrative", "Administrative Duration", "Informational", "Informational Duration", "Product Related" and "Product Related Duration" represents the number of different types of pages visited by the visitor in that session and total time spent in each of these page categories. The values of these features are derived from the URL information of the pages visited by the user and updated in real-time when a user takes an action, e.g. moving from one page to another. 
+4.
+The value of the "Bounce Rate" feature for a web page refers to the percentage of visitors who enter the site from that page and then leave ("bounce") without triggering any other requests to the analytics server during that session. 
+5.The value of the "Exit Rate" feature for a specific web page is calculated as for all pageviews to the page, the percentage that was the last in the session.
+6.The "Page Value" feature represents the average value for a web page that a user visited before completing an e-commerce transaction. 
+7.The "Special Day" feature indicates the closeness of the site visiting time to a specific special day (e.g. Mother’s Day, Valentine's Day) in which the sessions are more likely to be finalized with the transaction. The value of this attribute is determined by considering the dynamics of e-commerce such as the duration between the order date and delivery date. For example, for Valentina’s day, this value takes a nonzero value between February 2 and February 12, zero before and after this date unless it is close to another special day, and its maximum value of 1 on February 8. 
+8.The dataset also includes the operating system, browser, region, traffic type, visitor type as returning or new visitor, a Boolean value indicating whether the date of the visit is weekend, and month of the year.
+
+#3.Check the data
+
+## 3.1 installing packages and loading libraries
+```{r}
+
+
+install.packages("DataExplorer") 
+install.packages("Hmisc")
+install.packages("pastecs")
+install.packages("psych")
+install.packages("corrplot")
+install.packages("factoextra")
+install.packages("Rtsne")
+install.packages("caret")
+install.packages("tidyverse")
+install.packages("rlang",dependencies = TRUE)
+```
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+library(magrittr)
+library(warn = -1)
+
+
+library(RColorBrewer)
+library(ggplot2)
+library(lattice)
+library(corrplot)
+
+library(DataExplorer)
+library(Hmisc)
+library(pastecs)
+library(psych)
+library(factoextra)
+library(Rtsne)
+library(caret)
+```
+
+
+
+## 3.2 loading   and previweing dataset
+
+```{r}
+# loading the dataset
+
+df = read_csv('http://bit.ly/EcommerceCustomersDataset')
+```
+```{r}
+# Checking the top observations
+
+head(df)
+```
+
+```{r}
+# Checking the bottom observations
+
+tail(df)
+```
+
+```{r}
+# Viewing the structure of the dataset
+# ---
+#
+str(df)
+```
+
+```{r}
+# Viewing the statistical summary of the dataset
+# ---
+# 
+summary(df)
+```
+```{r}
+# Viewing the dimension of  dataset
+dim(df)
+```
+The dataset has 18columns and 12330 rows
+
+#4.Performing data cleaning
+
+##4.1 Duplicates
+
+```{r}
+duplicated_rows <- df[duplicated(df),]
+duplicated_rows
+```
+
+There are 119 duplicates
+```{r}
+# Removing duplicates
+
+df <- df[!duplicated(df),]
+
+```
+
+```{r}
+# verifying duplicates  have been dropped by checking the new dimension of the dataset
+
+dim(df)
+```
+New number of rows is 12211,initially before duplicates weredropped the number of rows was 12330
+
+##4.2 Missing data
+```{r}
+# Checking for Missing Values per column
+
+colSums(is.na(df))
+```
+
+```{r}
+# Checking for missing for the whole dataset
+sum(is.na(df))
+```
+```{r}
+# different ways of visualizing missing data
+
+plot_missing(df)
+```
+
+```{r}
+install.packages("naniar")
+library(naniar)
+
+vis_miss(df)
+```
+```{r}
+gg_miss_var(df)
+```
+```{r}
+gg_miss_var(df, show_pct = TRUE)
+```
+```{r}
+# Dropping missing values dfclean= na.omit(df)
+dfclean<-na.omit(df)
+```
+
+```{r}
+#Confriming that the missing values have been deleted.
+sum(is.na(dfclean))
+```
+there are now no  missing values 
+
+```{r}
+#plotting cleaned dataset dfcleaned
+gg_miss_var(dfclean)
+```
+## 4.3 Outliers
+
+```{r}
+str(dfclean)
+```
+
+```{r}
+boxplot(dfclean$Administrative,col = "pink",main = "Administrative",border = "brown",xlab="Administative page type",horizontal = T)
+```
+```{r}
+boxplot(dfclean$Administrative_Duration,col = "pink",main = "Administrative_Duration",border = "brown",xlab="Administative page type duration time",horizontal = T)
+```
+
+```{r}
+ boxplot(dfclean$Informational,col = "pink",main = "Informational",border = "brown",xlab="Informational page type ",horizontal = T)
+```
+```{r}
+ boxplot(dfclean$Informational_Duration,col = "pink",main = "Informational duration",border = "brown",xlab="Informational page type duration time ",horizontal = T)
+```
+```{r}
+boxplot(dfclean$ProductRelated,col = "pink",main = "ProductRelated",border = "brown",xlab="ProductRelated page type",horizontal = T)
+```
+```{r}
+boxplot(dfclean$ProductRelated_Duration,col = "pink",main = "ProductRelated_Duration",border = "brown",xlab="ProductRelated page type duration",horizontal = T)
+```
+```{r}
+boxplot(dfclean$BounceRates,col = "pink",main = "BounceRates",border = "brown",xlab="Bounce rate t",horizontal = T)
+```
+
+```{r}
+boxplot(dfclean$ExitRates,col = "pink",main = "ExitRates",border = "brown",xlab="ExitRates t",horizontal = T)
+```
+```{r}
+boxplot(dfclean$PageValues,col = "pink",main = "page value",border = "brown",xlab="average value for a web page that a user visited before completing an e-commerce transaction",horizontal = T)
+```
+There are outliers noted but  they wont be removed at this point in time ,more insights could be drawn from them later
+
+#5.EDA
+
+##5.1 Univariate 
+
+
+
+```{r}
+# Checking numeric columns
+
+dfcleaned_num<-select_if(dfclean, is.numeric)
+dfcleaned_num
+
+```
+
+```{r}
+dfcleaned_num <- data.frame(
+  Min = apply(dfclean, 2, min),    # minimum
+  Med = apply(dfclean, 2, median), # median
+  Mean = apply(dfclean, 2, mean),  # mean
+  SD = apply(dfclean, 2, sd),      # Standard deviation
+  Max = apply(dfclean, 2, max)     # Maximum
+)
+
+head(dfcleaned_num)
+
+```
+```{r}
+mean(dfclean$Administrative)
+median(dfclean$Administrative)
+sd(dfclean$Administrative)
+var(dfclean$Administrative)
+range(dfclean$Administrative)
+
+```
+```{r}
+install.packages("moments")
+library(moments)
+skewness(dfclean$Administrative)
+kurtosis(dfclean$Administrative)
+```
+The administrative column is skewed to the right It has a skewness of 1.946248 which means that the data is positively skewed.
+The kurtosis of the variable is 7.636106. This means that the data is not flat but it is peaky.
+
+```{r}
+min(dfclean$BounceRates)
+max(dfclean$BounceRates)
+mean(dfclean$BounceRates)
+median(dfclean$BounceRates)
+sd(dfclean$BounceRates)
+var(dfclean$BounceRates)
+range(dfclean$BounceRates)
+skewness(dfclean$BounceRates)
+kurtosis(dfclean$BounceRates)
+```
+```{r}
+min(dfclean$ExitRates)
+max(dfclean$ExitRates)
+mean(dfclean$ExitRates)
+median(dfclean$ExitRates)
+sd(dfclean$ExitRates)
+var(dfclean$ExitRates)
+range(dfclean$ExitRates)
+skewness(dfclean$ExitRates)
+kurtosis(dfclean$ExitRates)
+```
+
+```{r}
+min(dfclean$PageValues)
+max(dfclean$PageValues)
+mean(dfclean$PageValues)
+median(dfclean$PageValues)
+sd(dfclean$PageValues)
+var(dfclean$PageValues)
+range(dfclean$PageValues)
+skewness(dfclean$PageValues)
+kurtosis(dfclean$PageValues)
+```
+```{r}
+min(dfclean$SpecialDay)
+max(dfclean$SpecialDay)
+mean(dfclean$SpecialDay)
+median(dfclean$SpecialDay)
+sd(dfclean$SpecialDay)
+var(dfclean$SpecialDay)
+range(dfclean$SpecialDay)
+skewness(dfclean$SpecialDay)
+kurtosis(dfclean$SpecialDay)
+```
+```{r}
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+# Calculating the mode using out getmode() function
+# ---
+#
+modeadm <- getmode(dfclean$Administrative)
+modespecialday <- getmode(dfclean$SpecialDay)
+modeadmduration <- getmode(dfclean$Administrative_Duration)
+modeinfor <- getmode(dfclean$Informational)
+modeinfodura<- getmode(dfclean$Informational_Duration)
+modeproductrel <- getmode(dfclean$ProductRelated)
+modeproductreladuration <- getmode(dfclean$ProductRelated_Duration)
+modebouncerate <- getmode(dfclean$BounceRates)
+modeexitrate <- getmode(dfclean$ExitRates)
+modepagevalues <- getmode(dfclean$PageValues)
+# Then printing out modes of the various variables
+modeadm 
+modespecialday 
+modeadmduration 
+modeinfor 
+modeinfodura
+modeproductrel 
+modeproductreladuration 
+modebouncerate 
+modeexitrate 
+modepagevalues 
+```
+
+```{r}
+# Bar plots 
+counts <- table(dfclean$Month)
+barplot(counts, main="month", horiz=TRUE,col="pink")
+ 
+```
+May is the month with the highest number of visitors while Feb has the list
+```{r}
+counts <- table(dfclean$VisitorType)
+barplot(counts, main="Visitor TYPE", horiz=TRUE,col="pink")
+```
+Returning visitors were the highest type of visitors
+```{r}
+counts <- table(dfclean$OperatingSystems)
+barplot(counts, main="operating systems", horiz=TRUE,col="pink")
+```
+The most used operating system was type 2 and the least favourable was 5 and7
+
+```{r}
+counts <- table(dfclean$TrafficType)
+barplot(counts, main="Traffictype", horiz=TRUE,col="pink")
+```
+The most frequent traffictype were 2,1 and 3 respectivelu
+
+```{r}
+counts <- table(dfclean$Region)
+barplot(counts, main="Region", horiz=TRUE,col="pink")
+```
+
+Region number 1 had the most activity, region 5 was least active.
+```{r}
+hist(dfclean$BounceRates, 
+     main = "Histogram of Bounce rate", 
+     xlab = "bounce rates", col = "magenta")
+```
+The histogram is positively skewed meaning that  percentage of visitors who enter the site from that page and then leave ("bounce") without triggering any other requests to the analytics server during that session was high
+```{r}
+hist(df$ExitRates,
+     main = "Histogram of Exit Rates",
+     xlab = "Exit Rates",
+     col = "cyan")
+```
+
+The histogram is positively skewed  meaning the exit rates were high
+
+##5.2 Bivariate
+
+```{r}
+plot(ExitRates ~ BounceRates, data = dfclean, 
+      col = "cyan",
+      main = "Bounce vs Exit Rates Scatter Plot")
+
+```
+as bounce rates increases so do exit rates which is an indicator of a high positive correlation betwwen  bounce rates and exit rates
+
+
+
+```{r}
+df %>%
+    ggplot(aes(Month)) +
+    geom_bar(aes(fill = VisitorType))+
+    labs(title = "Stacked Chart of  Visitor Type by Month")
+```
+"Other" customer categories came to shop on November and December. i would recommend to the company investigate who these other customers are.
+May, Nov, March, and December in that order are the busy months.
+During these months there is a higher number of new visitors which the company can attract using offers  so as to retain them
+Feb and June are the least busy months.
+Feb has Valentines day  which is a 'special day' its expected to be amongest month with highest sale just like may which has mothers day..however this is not the case,i would recommend the company to investigate reasons/factors leading to
+this anomaly
+
+```{r}
+df %>%
+    ggplot(aes(Revenue)) +
+    geom_bar(aes(fill = Weekend))+
+    labs(title = "Stacked Chart of  Revenue by Day Type")
+```
+ the company made revenue mostly during the 
+```{r}
+df %>%
+    ggplot(aes(Revenue)) +
+    geom_bar(aes(fill = Month))+
+    labs(title = "Stacked Chart: Revenue by Month")
+```
+ 
+ Nov, May and March are best months when the company makes most revenue.
+ 
+## Multivariate
+ 
+```{r}
+
+# Calculate the correlations
+corr <- cor(dfclean[,1:10])
+corr
+
+corrplot(corr, method="circle")
+```
+The deeper the colors(either blue or red) the strong the relationship between the variables.
+The diagonal are perfectly positively correlated because it shows the correlation of each attribute with itself.
+there is a strong postive relationship between a page type and its respective duration for example ProductRelated page and Product Related Duration
+
+```{r}
+pairs(dfclean[,1:10])
+```
+#6.Implementing the solution
+
+##6.1 Kmeans clustering
+
+
+
+```{r}
+#  One hot encoding of the factor variables.
+dfnew<- dfclean[-c(18)]
+dfnew
+```
+
+
+```{r}
+dummy = dummyVars(" ~ .", data = dfnew)
+
+dfcleanfinal = data.frame(predict(dummy, newdata = dfnew))
+dfcleanfinal
+```
+
+```{r}
+glimpse(dfcleanfinal)
+```
+
+
+```{r}
+
+# Since clustering is a type of Unsupervised Learning, 
+
+# We will, therefore, remove Class Attribute “Revenue” and store it in another variable. 
+
+dfcleanfinal_copy <- dfcleanfinal
+dfcleanclass.class<- dfclean[, "Revenue"]
+
+dfcleanfinal_copy1 <- dfcleanfinal
+
+
+```
+
+```{r}
+# Previewing the class
+head(dfcleanclass.class)
+```
+```{r}
+# Previewing the dataset with dummy variables without the target variable
+head(dfcleanfinal_copy)
+```
+
+
+```{r}
+#  : Normalizing OR SCALING the data will do boththem select thebest
+# This is important to ensure that no particular attribute,
+# Has more impact on clustering algorithm than others
+
+```
+
+```{r}
+dfnormalized <- as.data.frame(apply(dfcleanfinal_copy1, 2, function(x) (x - min(x))/(max(x)-min(x))))
+```
+```{r}
+summary(dfnormalized)
+```
+```{r}
+head(dfnormalized)
+```
+```{r}
+dfscaled <- scale(dfcleanfinal_copy1)
+```
+```{r}
+head(dfscaled)
+```
+It is evident that there are some attributes still with large values compared to others when scaling is done
+Normalizing has yielded better results
+
+
+
+```{r}
+install.packages("NbClust")
+library(cluster)
+
+library(NbClust)
+
+
+
+```
+
+
+
+
+```{r}
+# Applying the K-means clustering algorithm with no. of centroids(k)=4
+
+result<- kmeans(dfnormalized,4) 
+```
+
+```{r}
+result
+```
+
+```{r}
+# Previewing the no. of records in each cluster
+# 
+result$size 
+```
+```{r}
+# Getting the value of cluster center 
+# ---
+# 
+result$centers 
+```
+```{r}
+# Getting the cluster vector that shows the cluster where each record falls
+# ---
+# 
+result$cluster
+```
+```{r}
+# Plotting to see how  3 and 4th variables data points have been distributed in clusters
+plot(dfnormalized[c(3,4)], col = result$cluster)
+
+```
+```{r}
+#In order to improve this accuracy further, we may try different values of “k”.
+dfnormalizeda <- kmeans(dfnormalized, centers = 2, nstart = 25)
+dfnormalizedb <- kmeans(dfnormalized, centers = 3, nstart = 25)
+dfnormalizedc <- kmeans(dfnormalized, centers = 4, nstart = 25)
+```
+
+```{r}
+p1 <- fviz_cluster(dfnormalizeda, geom = "point", data = dfnormalized) + ggtitle(" K = 2")
+p2 <- fviz_cluster(dfnormalizedb, geom = "point", data = dfnormalized) + ggtitle(" K = 3")
+p3 <- fviz_cluster(dfnormalizedc, geom = "point", data = dfnormalized) + ggtitle(" K = 4")
+install.packages("gridExtra")
+library(gridExtra)
+grid.arrange(p1, p2, p3, nrow = 2)
+```
+K4 has better separation of the clusters compared to the others
+
+
+
+
+
